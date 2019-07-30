@@ -61,6 +61,7 @@ my.data = as.data.frame(do.call(rbind, mapply(cbind, data.lists, "File ID" =
 colnames(my.data)[1:length(my.data) - 1] <- as.character(read.FCS
 (my.files[[1]])@parameters@data[["desc"]])
 ```
+
 ```{r read_data_files_csv, warning=FALSE}
 # read FCS files into R; make sure FCS files are in the my_data_files folder 
 setwd(paste(getwd(), "/datafiles/my_data_files", sep = ""))
@@ -74,6 +75,7 @@ data.lists <- lapply(my.files, read.csv)
 my.data = as.data.frame(do.call(rbind, mapply(cbind, data.lists, "File ID" = 
                                         c(1:length(data.lists)), SIMPLIFY = F)))
 ```
+
 ```{r select_and_scale}
 # select all channels with markers (that you want to apply scales to) by opening
 # console below
@@ -88,6 +90,7 @@ my.markers.transformed <- my.marker.data %>%
   mutate_all(function(x)
     asinh(x / cofactor))
 ```
+
 ```{r run_UMAP}
 # Run UMAP on chosen markers
 
