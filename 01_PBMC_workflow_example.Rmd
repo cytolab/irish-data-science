@@ -126,7 +126,6 @@ set.seed(overall_seed)
 # the line below will run UMAP on the data set (to see help page for UMAP, type "UMAP -- enter" in console)
 myumap <-
   umap(transformed.chosen.markers,  # input scaled data
-       ret_model = TRUE,
        n_threads = 1,               # this argument makes UMAP reproducible
        verbose = TRUE)
 umap.data = as.data.frame(myumap$embedding)
@@ -164,23 +163,23 @@ ggplot(UMAP.plot, aes(x = x, y = y)) + coord_fixed(ratio = graphical.ratio)  +
 # Time <10 sec
 
 # create flowFrame for FlowSOM input (using umap axes as input)
-umap.matrix <- as.matrix(umap.data)
-UMAP.metadata <-
-  data.frame(name = dimnames(umap.matrix)[[2]],
-             desc = paste('UMAP', dimnames(umap.matrix)[[2]]))
-UMAP.metadata$range <- apply(apply(umap.matrix, 2, range), 2, diff)
-UMAP.metadata$minRange <- apply(umap.matrix, 2, min)
-UMAP.metadata$maxRange <- apply(umap.matrix, 2, max)
-umap.flowframe <- new("flowFrame",
-                      exprs = umap.matrix,
-                      parameters = AnnotatedDataFrame(UMAP.metadata))
+matrix <- as.matrix(umap.data)
+metadata <-
+  data.frame(name = dimnames(matrix)[[2]],
+             desc = paste('UMAP', dimnames(matrix)[[2]]))
+metadata$range <- apply(apply(matrix, 2, range), 2, diff)
+metadata$minRange <- apply(matrix, 2, min)
+metadata$maxRange <- apply(matrix, 2, max)
+flowframe <- new("flowFrame",
+                      exprs = matrix,
+                      parameters = AnnotatedDataFrame(metadata))
 
 # implement the FlowSOM on the data by running the line below (to see help page for FlowSOM, type "FlowSOM -- enter" in console)
 fsom <-
   FlowSOM(
     umap.flowframe,      # input flowframe 
     colsToUse = c(1:2),  # columns to use 
-    nClus = 15,          # target number of clusters (this can be changed)
+    nClus = 9,          # target number of clusters (this can be changed)
     seed = overall_seed  # set seed for reproducibility
   )
 FlowSOM.clusters <-
@@ -226,8 +225,8 @@ build.heatmaps(
   MEM.values,                   # input MEM values
   cluster.MEM = "both",         # dendrogram for columns and rows
   display.thresh = 3,           # display threshold for MEM scores
-  newWindow.heatmaps = FALSE,
-  output.files = FALSE,         # makes txt and PDF files for heatmap and MEM scores
+  newWindow.heatmaps = TRUE,
+  output.files = TRUE,          # makes txt and PDF files for heatmap and MEM scores
   labels = TRUE,                # include labels in heatmap
   only.MEMheatmap = FALSE
 )
