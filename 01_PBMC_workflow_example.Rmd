@@ -50,10 +50,7 @@ files <-  dir(pattern = "*.fcs")
 
 # prepare data for use in downstream analysis
 data <- lapply(lapply(files, read.FCS), exprs)
-ID <- c(1:length(data))
-combined.data = as.data.frame(do.call(rbind, mapply(
-  cbind, data, "File ID" = ID, SIMPLIFY = F
-)))
+combined.data = as.data.frame(do.call(rbind, data))
 
 # choose markers to use for downstream analysis and apply arcsinh
 # transformation with a cofactor of 15
@@ -104,7 +101,8 @@ ggplot(tsne.plot) + coord_fixed(ratio = graphical.ratio) +
   geom_point(aes(x = x, y = y), cex = 1) + labs(x = "t-SNE 1", y = "t-SNE 2", 
                                                 title = "t-SNE on PBMC Data") + 
   theme_bw() + 
-  labs(caption = "Data from Digggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63")
+  labs(caption = "Data from Digggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
 
 # density dot plot
 ggplot(tsne.plot, aes(x = x, y = y)) + coord_fixed(ratio = graphical.ratio)  + 
@@ -114,7 +112,8 @@ ggplot(tsne.plot, aes(x = x, y = y)) + coord_fixed(ratio = graphical.ratio)  +
   scale_y_continuous(expand = c(0.1, 0)) + labs(x = "t-SNE 1", y = "t-SNE 2", 
                                                 title = "t-SNE on PBMC Data") + 
   theme_bw() + 
-  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63")
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
 ```
 
 ```{r run_UMAP}
@@ -128,7 +127,7 @@ myumap <-
   umap(transformed.chosen.markers,  # input scaled data
        n_threads = 1,               # this argument makes UMAP reproducible
        verbose = TRUE)
-umap.data = as.data.frame(myumap$embedding)
+umap.data = as.data.frame(myumap)
 ```
 
 ```{r plot_UMAP}
@@ -146,7 +145,8 @@ ggplot(UMAP.plot) + coord_fixed(ratio = graphical.ratio) +
   geom_point(aes(x = x, y = y), cex = 1) + labs(x = "UMAP 1", y = "UMAP 2", 
                                                 title = "UMAP on PBMC Data") + 
   theme_bw() + 
-  labs(caption = "Data from Digggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63")
+  labs(caption = "Data from Digggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
 
 # density dot plot
 ggplot(UMAP.plot, aes(x = x, y = y)) + coord_fixed(ratio = graphical.ratio)  + 
@@ -156,7 +156,8 @@ ggplot(UMAP.plot, aes(x = x, y = y)) + coord_fixed(ratio = graphical.ratio)  +
   scale_y_continuous(expand = c(0.1, 0)) + labs(x = "UMAP 1", y = "UMAP 2", 
                                                 title = "UMAP on PBMC Data") + 
   theme_bw() + 
-  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63")
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
 ```
 
 ```{r run_FlowSOM}
@@ -177,9 +178,9 @@ flowframe <- new("flowFrame",
 # implement the FlowSOM on the data by running the line below (to see help page for FlowSOM, type "FlowSOM -- enter" in console)
 fsom <-
   FlowSOM(
-    umap.flowframe,      # input flowframe 
+    flowframe,      # input flowframe 
     colsToUse = c(1:2),  # columns to use 
-    nClus = 9,          # target number of clusters (this can be changed)
+    nClus = 10,          # target number of clusters (this can be changed)
     seed = overall_seed  # set seed for reproducibility
   )
 FlowSOM.clusters <-
@@ -225,7 +226,7 @@ build.heatmaps(
   MEM.values,                   # input MEM values
   cluster.MEM = "both",         # dendrogram for columns and rows
   display.thresh = 3,           # display threshold for MEM scores
-  newWindow.heatmaps = TRUE,
+  newWindow.heatmaps = FALSE,
   output.files = TRUE,          # makes txt and PDF files for heatmap and MEM scores
   labels = TRUE,                # include labels in heatmap
   only.MEMheatmap = FALSE
