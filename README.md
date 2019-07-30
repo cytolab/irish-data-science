@@ -7,7 +7,7 @@ To get started, make sure you have the latest R and RStudio installed.  Then dow
 
 ### Prerequisites
 
-Everything needed to install and run the example code is listed in the 00_install_tools.rmd file.  This will include the Bioconductor package and flowCore, which enable reading of Flow Cytometry Standard (FCS) files of single cell data.  Additional packages used in the example scripts include FlowSOM, t-SNE, and UMAP, in addition to MEM.
+Everything needed to install and run the example code is listed in the 00_install_tools.rmd file.  This will include the Bioconductor package and flowCore, which enable reading of Flow Cytometry Standard (FCS) files of single cell data.  Additional packages used in the example scripts include t-SNE, UMAP, and FlowSOM, in addition to MEM.
 
 ### Installing
 
