@@ -32,7 +32,7 @@ In Finder, go to the Applications folder --> Utilities folder --> select Termina
 
 xcode-select --install
 
-5) Mac users may also need the X11 program, which allows window control.
+5) Mac users may also need the X11/XQuartz program, which allows window control.
 
 Mac users download XQuartz-2.7.11.dmg for OS X 10.6.3 or later here:
 https://www.xquartz.org/
