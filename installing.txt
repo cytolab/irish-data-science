@@ -2,7 +2,7 @@ Installing Packages
 
 This section usually takes 10 to 30 minutes to download and install several packages of code.
 These code packages allow R to work with flow cytometry files (FCS files) and install several
-useful algorithms, including FlowSOM, t-SNE, MEM, and UMAP.  
+useful algorithms, including t-SNE, UMAP, FlowSOM, and MEM.  
 
 You may see a stop sign as they install and a download window. That is usually good.
 You should make sure you CONSOLE is visible.  
