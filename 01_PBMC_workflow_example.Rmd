@@ -12,7 +12,7 @@ editor_options:
 ---
 
 This data set contains 7 FCS (flow cytometry standard) files. Each FCS file 
-contains single cell ndata for one cell subset that is a well-established, 
+contains single cell data for one cell subset that is a well-established, 
 phenotypically distinct population. This is mass cytometry data for healthy 
 human PBMC (peripheral blood mononuclear cells). The populations were expert 
 gated following a t-SNE analysis. The first section of the code will run two
