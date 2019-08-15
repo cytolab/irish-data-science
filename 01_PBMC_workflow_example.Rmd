@@ -128,6 +128,7 @@ myumap <-
   umap(transformed.chosen.markers,  # input scaled data
        n_components = 2,            # number of final dimensions
        n_neighbors = 15,            # number of nearest neighbors to look at, scales with data set
+       min_dist = 0.01,             # desired separation between close points in embedding space (for visualization)
        n_threads = 1,               # this argument makes UMAP reproducible
        verbose = TRUE)
 umap.data = as.data.frame(myumap)
