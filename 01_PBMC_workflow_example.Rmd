@@ -126,6 +126,7 @@ set.seed(overall_seed)
 # you can view UMAP progress by opening up the console below
 myumap <-
   umap(transformed.chosen.markers,  # input scaled data
+       n_components = 2,            # number of final dimensions
        n_neighbors = 15,            # number of nearest neighbors to look at, scales with data set
        n_threads = 1,               # this argument makes UMAP reproducible
        verbose = TRUE)
