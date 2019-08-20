@@ -18,18 +18,6 @@ cat("\n\nCourse FCS format files are in subdirecties of the /datafiles folder:\n
 list.files(paste(getwd(), "/datafiles", sep=""))
 ```
 
-```{r check_R_version_for_PC_users, echo=FALSE, results = "markup",message=FALSE}
-# Check version of R and install new version if available 
-# This only works for PC users
-if(!require(installr)){install.packages("installr"); require(installr)}
-updateR()
-cat("If you run this chunk of code again and do not see that your R version is 
-up-to-date, go to Tools --> Global Options --> General (Basic) --> change the 
-path to the latest versio of R under R session. You may then be prompted to quit 
-and re-open RStudio. If you do not see the new version listed in the directory, 
-you will need to try installing the latest version of R again.")
-```
-
 ```{r installation_notes, echo=FALSE, results = "markdown"}
 # Print the contents a help file that explains installing packages
 writeLines(readLines(paste(getwd(), "installing.txt", sep="/")))
