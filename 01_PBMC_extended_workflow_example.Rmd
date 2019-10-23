@@ -296,7 +296,7 @@ FlowSOM.clusters.OG <-
   as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
 
 ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
-  geom_point(aes(x=x, y=y, color=cluster.tsne), cex = 0.3) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.OG), cex = 0.3) + 
   labs(x = "t-SNE 1", y = "t-SNE 2",
        title = "FlowSOM Clustering on Original Markers", color = "Cluster") +
   theme_bw() + scale_color_manual(values = sample(col_vector)) +
