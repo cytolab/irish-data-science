@@ -1,0 +1,503 @@
+---
+title: "Data Analysis Workflow Example on PBMC Data (t-SNE, UMAP, FlowSOM, MEM)"
+author: "Copyright (c) 2016-2019 by Kirsten Diggins, Sierra Barone, and Jonathan Irish, All Rights Reserved; see EULA-MEM.text for MEM license information"
+date: "July 2019"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+---
+
+This data set contains 7 FCS (flow cytometry standard) files. Each FCS file 
+contains single cell data for one cell subset that is a well-established, 
+phenotypically distinct population. This is mass cytometry data for healthy 
+human PBMC (peripheral blood mononuclear cells). The populations were expert 
+gated following a t-SNE analysis. The first section of the code will run two
+dimensionality reduction tools, UMAP and t-SNE, on the data set. Next, you 
+will run FlowSOM on the both the UMAP and t-SNE axes to cluster, or group 
+together, the various cell populations. Finally, you will run MEM to see 
+enrichment scores for each of the FlowSOM clusters or populations that have been 
+expert gated. The goal of this exercise is to run several computational tools on 
+a single cell data set to get a feel for the workflow used in the Irish lab as 
+well as compare the various analysis methods. The method for comparison of the 
+cell populations by automated or manual analysis is RMSD. 
+
+```{r setup, include=FALSE}
+# Time <10 sec
+
+# Load all libraries
+# If you get an error message, you will need to try re-installing packages by 
+# going back to the 00_install_tools.RMD script
+library(FlowSOM)
+library(flowCore)
+library(Biobase)
+library(ggplot2)
+library(hexbin)
+library(MEM)
+library(tidyverse)
+library(Rtsne)
+library(uwot)
+library(viridis)
+library(ggExtra)
+library(RColorBrewer)
+```
+
+```{r data_preparation, warning=FALSE}
+# Time <10 sec
+
+# read files into R by setting working directory and directing R to the fcs 
+# files
+
+setwd(paste(getwd(), "/datafiles/PBMC", sep = ""))
+files <-  dir(pattern = "*.fcs")
+
+# convert and combine data for use in downstream analysis
+data <- lapply(lapply(files, read.FCS), exprs)
+
+combined.data = as.data.frame(do.call(rbind, mapply(
+  cbind, data, "cluster" = c(1:length(data)), SIMPLIFY = F
+)))
+
+# choose channels with markers to use for downstream analysis and apply arcsinh
+# transformation with a cofactor of 15
+transformed.chosen.markers <- combined.data %>%
+  select(contains("-"),-contains("Ir")) %>%
+  mutate_all(function(x)
+    asinh(x / 15))        # cofactor here is 15; this can be changed
+
+# set seed for reproducible results (43 is chosen below)
+overall_seed = 43
+```
+
+```{r run_t-SNE}
+# Time ~5 min
+
+set.seed(overall_seed)
+
+# the line below will run t-SNE on the scaled surface markers (to see help page 
+# for t-SNE, type "?Rtsne -- enter" in console) 
+
+# you can view t-SNE progress by opening up the console below
+
+mytSNE = Rtsne(
+  transformed.chosen.markers,                        # input scaled data
+  
+  dims = 2,                                          # number of final 
+                                                     # dimensions
+  
+  initial_dims = length(transformed.chosen.markers), # number of initial 
+                                                     # dimensions
+  
+  perplexity = 30,          # perplexity (similar to # of nearest neighbors, 
+                            # will scale with data sets, cannot be greater than
+                            # the number of events minus 1 divided by 3)
+  check_duplicates = FALSE, 
+  max_iter = 1000,          # number of iterations
+  verbose = TRUE
+)
+tsne.data = as.data.frame(mytSNE$Y)
+```
+
+```{r plot_t-SNE}
+# Time <10 sec
+
+# setting aspect ratio for plots
+range <- apply(apply(tsne.data, 2, range), 2, diff)
+graphical.ratio.tsne <- (range[1] / range[2])
+
+# t-SNE flat dot plot and density dot plot (1 dot = 1 cell)
+tsne.plot <- data.frame(x = tsne.data[, 1], y = tsne.data[, 2])
+
+# dot plot
+ggplot(tsne.plot) + coord_fixed(ratio = graphical.ratio.tsne) + 
+  geom_point(aes(x = x, y = y), cex = 0.5) + labs(x = "t-SNE 1", y = "t-SNE 2", 
+  title = "PBMC Data on t-SNE Axes") + 
+  theme_bw() + 
+  labs(caption = "Data from Digggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+
+# density dot plot
+ggplot(tsne.plot, aes(x = x, y = y)) + 
+  coord_fixed(ratio = graphical.ratio.tsne) + geom_bin2d(bins = 128) +
+  scale_fill_viridis_c(option = "A", trans = "sqrt") + 
+  scale_x_continuous(expand = c(0.1, 0)) +
+  scale_y_continuous(expand = c(0.1, 0)) + labs(x = "t-SNE 1", y = "t-SNE 2", 
+  title = "Density on t-SNE Axes") + theme_bw() + 
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+```
+
+```{r run_UMAP}
+# Time ~1 min
+
+# Run UMAP on all scaled surface markers
+set.seed(overall_seed)
+
+# the line below will run UMAP on the data set (to see help page for UMAP, type 
+# "UMAP -- enter" in console)
+
+# you can view UMAP progress by opening up the console below
+
+myumap <-
+  umap(transformed.chosen.markers,  # input scaled data
+       
+       n_neighbors = 15,            # number of nearest neighbors to look at, 
+                                    # scales with data set
+       
+       n_threads = 1,               # this argument makes UMAP reproducible
+       verbose = TRUE)
+umap.data = as.data.frame(myumap)
+```
+
+```{r plot_UMAP}
+# Time <10 sec
+
+# setting aspect ratio for plots
+range <- apply(apply(umap.data, 2, range), 2, diff)
+graphical.ratio.umap <- (range[1] / range[2])
+
+# UMAP flat dot plot and density dot plot (1 dot = 1 cell)
+UMAP.plot <- data.frame(x = umap.data[, 1], y = umap.data[, 2])
+
+# dot plot
+ggplot(UMAP.plot) + coord_fixed(ratio = graphical.ratio.umap) + 
+  geom_point(aes(x = x, y = y), cex = 0.5) + labs(x = "UMAP 1", y = "UMAP 2", 
+  title = "PBMC Data on UMAP Axes") + theme_bw() + 
+  labs(caption = "Data from Digggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+
+# density dot plot
+ggplot(UMAP.plot, aes(x = x, y = y)) + 
+  coord_fixed(ratio = graphical.ratio.umap) + geom_bin2d(bins = 128) +
+  scale_fill_viridis_c(option = "A", trans = "sqrt") + 
+  scale_x_continuous(expand = c(0.1, 0)) +
+  scale_y_continuous(expand = c(0.1, 0)) + labs(x = "UMAP 1", y = "UMAP 2", 
+  title = "Density on UMAP Axes") + theme_bw() + 
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+```
+
+```{r run_FlowSOM_on_t-SNE}
+# Time <10 sec
+
+# create flowFrame for FlowSOM input (using t-SNE axes as input)
+matrix <- as.matrix(tsne.data)
+metadata <-
+  data.frame(name = dimnames(matrix)[[2]],
+             desc = dimnames(matrix)[[2]])
+metadata$range <- apply(apply(matrix, 2, range), 2, diff)
+metadata$minRange <- apply(matrix, 2, min)
+metadata$maxRange <- apply(matrix, 2, max)
+flowframe <- new("flowFrame",
+                      exprs = matrix,
+                      parameters = AnnotatedDataFrame(metadata))
+
+# implement the FlowSOM on the data by running the line below (to see help page 
+# for FlowSOM, type "?FlowSOM --> enter" in console)
+
+fsom <-
+  FlowSOM(
+    flowframe,      # input flowframe 
+    
+    colsToUse = c(1:2),  # columns to use 
+    
+    nClus = 10,          # target number of clusters (this can be changed)
+    
+    seed = overall_seed  # set seed for reproducibility
+  )
+FlowSOM.clusters.tsne <-
+  as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
+```
+
+```{r plot_tsne_flowSOM_clusters}
+# Time <10 sec
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, 
+                           rownames(qual_col_pals)))
+
+
+# plot FlowSOM clusters on t-SNE axes
+ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.tsne), cex = 0.5) + 
+  labs(x = "t-SNE 1", y = "t-SNE 2",title = "FlowSOM Clustering on t-SNE Axes", 
+      color = "Cluster") + theme_bw() + 
+  guides(colour = guide_legend(override.aes = list(size=4))) +
+  scale_color_manual(values = sample(col_vector)) +
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+```
+```{r run_FlowSOM_varying_cluster_number}
+# Time ~ 1-2 min
+
+for (i in seq(5,45,by = 10)){
+
+  matrix <- as.matrix(tsne.data)
+metadata <-
+  data.frame(name = dimnames(matrix)[[2]],
+             desc = dimnames(matrix)[[2]])
+metadata$range <- apply(apply(matrix, 2, range), 2, diff)
+metadata$minRange <- apply(matrix, 2, min)
+metadata$maxRange <- apply(matrix, 2, max)
+flowframe <- new("flowFrame",
+                      exprs = matrix,
+                      parameters = AnnotatedDataFrame(metadata))
+fsom <-
+  FlowSOM(
+    flowframe, 
+    colsToUse = c(1:2),
+    nClus = i,    
+    seed = overall_seed 
+  )
+FlowSOM.clusters.vary <-
+  as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
+
+legend.col = round(max(as.numeric(as.vector(FlowSOM.clusters.vary)))/3)
+print(ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.vary), cex = 0.5) + 
+  labs(x = "t-SNE 1", y = "t-SNE 2",title = "FlowSOM Clustering on t-SNE Axes", 
+       color = "Cluster") + theme_bw() + 
+  guides(colour = guide_legend(override.aes = list(size=4), 
+                               nrow = legend.col)) + 
+    scale_color_manual(values = sample(col_vector)) +
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank()))}
+```
+```{r run_FlowSOM_on_original markers}
+# Time ~ 1 min
+
+matrix <- as.matrix(transformed.chosen.markers)
+metadata <-
+  data.frame(name = dimnames(matrix)[[2]],
+             desc = dimnames(matrix)[[2]])
+metadata$range <- apply(apply(matrix, 2, range), 2, diff)
+metadata$minRange <- apply(matrix, 2, min)
+metadata$maxRange <- apply(matrix, 2, max)
+flowframe <- new("flowFrame",
+                      exprs = matrix,
+                      parameters = AnnotatedDataFrame(metadata))
+
+fsom <-
+  FlowSOM(
+    flowframe,
+    colsToUse = c(1:ncol(transformed.chosen.markers)),
+    nClus = 10,   
+    seed = overall_seed
+  )
+FlowSOM.clusters.OG <-
+  as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
+
+ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
+  geom_point(aes(x=x, y=y, color=cluster.tsne), cex = 0.3) + 
+  labs(x = "t-SNE 1", y = "t-SNE 2",
+       title = "FlowSOM Clustering on Original Markers", color = "Cluster") +
+  theme_bw() + scale_color_manual(values = sample(col_vector)) +
+  guides(colour = guide_legend(override.aes = list(size=4))) +
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+```
+
+```{r run_FlowSOM_on_UMAP}
+# Time <10 sec
+
+matrix <- as.matrix(umap.data)
+metadata <-
+  data.frame(name = dimnames(matrix)[[2]],
+             desc = dimnames(matrix)[[2]])
+metadata$range <- apply(apply(matrix, 2, range), 2, diff)
+metadata$minRange <- apply(matrix, 2, min)
+metadata$maxRange <- apply(matrix, 2, max)
+flowframe <- new("flowFrame",
+                      exprs = matrix,
+                      parameters = AnnotatedDataFrame(metadata))
+fsom <-
+  FlowSOM(
+    flowframe,
+    colsToUse = c(1:2),
+    nClus = 10,
+    seed = overall_seed
+  )
+FlowSOM.clusters.umap <-
+  as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
+
+ggplot(UMAP.plot) + coord_fixed(ratio=graphical.ratio.umap) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.umap), cex = 0.5) + 
+  labs(x = "UMAP 1", y = "UMAP 2",title = "FlowSOM Clustering on UMAP Axes", 
+       color = "Cluster") + theme_bw() + 
+  guides(colour = guide_legend(override.aes = list(size=4)))+
+  scale_color_manual(values = sample(col_vector))+
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+```
+
+```{r run_MEM_on_FlowSOM_on_t-SNE}
+# Time ~30 sec
+
+# Run MEM on the FlowSOM clusters found from using UMAP axes
+cluster = as.numeric(as.vector((FlowSOM.clusters.tsne)))
+MEM.data = cbind(transformed.chosen.markers, cluster)
+
+MEM.values.tf = MEM(
+  MEM.data,              # input data (last column must contain cluster values)
+  
+  transform = FALSE,     # data is already scaled in this case
+  cofactor = 1,
+  choose.markers = FALSE,
+  markers = "all",       # use all transformed, chosen markers from previous 
+                         # selection
+  
+  choose.ref = FALSE,    # reference will be all other cells
+  zero.ref = FALSE,
+  rename.markers = FALSE,
+  new.marker.names = "CD19,CD117,CD11b,CD4,CD8,CD20,CD34,CD61,CD123,CD45RA,CD45,CD10,CD33,CD11c,CD14,CD69,CD15,CD16,CD44,CD38,CD25,CD3,IgM,HLA-DR,CD56", # rename channels for labels
+  file.is.clust = FALSE,
+  add.fileID = FALSE,
+  IQR.thresh = NULL
+)
+
+# build MEM heatmap and output enrichment scores
+build.heatmaps(
+  MEM.values.tf,                # input MEM values
+  
+  cluster.MEM = "both",         # dendrogram for columns and rows
+  
+  display.thresh = 2,           # display threshold for MEM scores
+  newWindow.heatmaps = FALSE,
+  output.files = TRUE,          # makes txt and PDF files for heatmap and MEM 
+                                # scores
+  
+  labels = TRUE,                # include labels in heatmap
+  only.MEMheatmap = FALSE
+)
+```
+
+```{r run_MEM_on_FlowSOM_on_OG}
+# Time ~30 sec
+
+cluster = as.numeric(as.vector((FlowSOM.clusters.OG)))
+MEM.data = cbind(transformed.chosen.markers, cluster)
+
+MEM.values.ogf = MEM(
+  MEM.data,       
+  transform = FALSE,
+  cofactor = 1,
+  choose.markers = FALSE,
+  markers = "all",  
+  choose.ref = FALSE,   
+  zero.ref = FALSE,
+  rename.markers = FALSE,
+  new.marker.names = "CD19,CD117,CD11b,CD4,CD8,CD20,CD34,CD61,CD123,CD45RA,CD45,CD10,CD33,CD11c,CD14,CD69,CD15,CD16,CD44,CD38,CD25,CD3,IgM,HLA-DR,CD56", # rename channels for labels
+  file.is.clust = FALSE,
+  add.fileID = FALSE,
+  IQR.thresh = NULL
+)
+
+build.heatmaps(
+  MEM.values.ogf,
+  cluster.MEM = "both",
+  display.thresh = 2,
+  newWindow.heatmaps = FALSE,
+  output.files = TRUE,
+  labels = TRUE,
+  only.MEMheatmap = FALSE
+)
+```
+
+```{r run_MEM_on_FlowSOM_on_UMAP}
+# Time ~30 sec
+
+cluster = as.numeric(as.vector((FlowSOM.clusters.umap)))
+MEM.data = cbind(transformed.chosen.markers, cluster)
+
+MEM.values.uf = MEM(
+  MEM.data,   
+  transform = FALSE,
+  cofactor = 1,
+  choose.markers = FALSE,
+  markers = "all",  
+  choose.ref = FALSE,   
+  zero.ref = FALSE,
+  rename.markers = FALSE,
+  new.marker.names = "CD19,CD117,CD11b,CD4,CD8,CD20,CD34,CD61,CD123,CD45RA,CD45,CD10,CD33,CD11c,CD14,CD69,CD15,CD16,CD44,CD38,CD25,CD3,IgM,HLA-DR,CD56", # rename channels for labels
+  file.is.clust = FALSE,
+  add.fileID = FALSE,
+  IQR.thresh = NULL
+)
+
+build.heatmaps(
+  MEM.values.uf,
+  cluster.MEM = "both", 
+  display.thresh = 2,
+  newWindow.heatmaps = FALSE,
+  output.files = TRUE,
+  labels = TRUE,
+  only.MEMheatmap = FALSE
+)
+```
+
+```{r run_MEM_on_manually_gated_pops}
+# Time ~30 sec
+
+MEM.values.orig = MEM(
+  combined.data,    
+  transform = TRUE,    
+  cofactor = 15,        
+  choose.markers = FALSE,
+  markers = "12:20,22:23,25:33,35:36,38:40",  
+  choose.ref = FALSE,
+  zero.ref = FALSE,
+  rename.markers = FALSE,
+  new.marker.names = "CD19,CD117,CD11b,CD4,CD8,CD20,CD34,CD61,CD123,CD45RA,CD45,CD10,CD33,CD11c,CD14,CD69,CD15,CD16,CD44,CD38,CD25,CD3,IgM,HLA-DR,CD56",
+  file.is.clust = FALSE, 
+  add.fileID = FALSE,
+  IQR.thresh = NULL
+)
+
+build.heatmaps(
+  MEM.values.orig,      
+  cluster.MEM = "both",
+  display.thresh = 2,   
+  newWindow.heatmaps = FALSE,
+  output.files = TRUE,
+  labels = TRUE,
+  only.MEMheatmap = FALSE
+)
+```
+
+```{r RMSD for All Clusters}
+# RMSD to compare labels from all populations (FlowSOM clusters vs. manually
+# gated cell populations)
+
+orig.MEM.scores = as.data.frame(MEM.values.orig[[5]])
+rownames(orig.MEM.scores) = paste0(rownames(orig.MEM.scores), " (Manual)")
+
+ogf.MEM.scores = as.data.frame(MEM.values.ogf[[5]])
+rownames(ogf.MEM.scores) = paste0(rownames(ogf.MEM.scores), " (OG/fSOM)")
+
+uf.MEM.scores = as.data.frame(MEM.values.uf[[5]])
+rownames(uf.MEM.scores) = paste0(rownames(uf.MEM.scores), ' (UMAP/fSOM)')
+
+tf.MEM.scores = as.data.frame(MEM.values.tf[[5]])
+rownames(tf.MEM.scores) = paste0(rownames(tf.MEM.scores), ' (t-SNE/fSOM)')
+
+all.MEM.values = as.matrix(rbind(orig.MEM.scores, ogf.MEM.scores, uf.MEM.scores, tf.MEM.scores))
+
+RMSD_vals <-
+  MEM_RMSD(
+    all.MEM.values,                # input all MEM values from clustering and 
+                                   # expert gating
+    format = NULL,
+    newWindow.heatmaps = FALSE,
+    output.matrix = TRUE
+  )
+```
