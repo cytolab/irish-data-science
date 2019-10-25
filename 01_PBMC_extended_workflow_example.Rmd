@@ -71,14 +71,12 @@ overall_seed = 43
 
 ```{r run_t-SNE}
 # Time ~5 min
-
 set.seed(overall_seed)
 
 # the line below will run t-SNE on the scaled surface markers (to see help page 
 # for t-SNE, type "?Rtsne -- enter" in console) 
 
 # you can view t-SNE progress by opening up the console below
-
 mytSNE = Rtsne(
   transformed.chosen.markers,                        # input scaled data
   
@@ -131,22 +129,20 @@ ggplot(tsne.plot, aes(x = x, y = y)) +
 
 ```{r run_UMAP}
 # Time ~1 min
-
-# Run UMAP on all scaled surface markers
 set.seed(overall_seed)
+# Run UMAP on all scaled surface markers
 
 # the line below will run UMAP on the data set (to see help page for UMAP, type 
-# "UMAP -- enter" in console)
+# "?UMAP -- enter" in console)
 
 # you can view UMAP progress by opening up the console below
-
 myumap <-
   umap(transformed.chosen.markers,  # input scaled data
        
        n_neighbors = 15,            # number of nearest neighbors to look at, 
                                     # scales with data set
        
-       n_threads = 1,               # this argument makes UMAP reproducible
+       n_threads = 1,               # this makes UMAP reproducible
        verbose = TRUE)
 umap.data = as.data.frame(myumap)
 ```
@@ -198,7 +194,6 @@ flowframe <- new("flowFrame",
 
 # implement the FlowSOM on the data by running the line below (to see help page 
 # for FlowSOM, type "?FlowSOM --> enter" in console)
-
 fsom <-
   FlowSOM(
     flowframe,      # input flowframe 
@@ -219,7 +214,6 @@ qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, 
                            rownames(qual_col_pals)))
 
-
 # plot FlowSOM clusters on t-SNE axes
 ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
   geom_point(aes(x=x, y=y, color=FlowSOM.clusters.tsne), cex = 0.5) + 
@@ -231,9 +225,9 @@ ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) +
   theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank())
 ```
+
 ```{r run_FlowSOM_varying_cluster_number}
 # Time ~ 1-2 min
-
 for (i in seq(5,45,by = 10)){
 
   matrix <- as.matrix(tsne.data)
@@ -268,6 +262,7 @@ print(ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) +
   theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank()))}
 ```
+
 ```{r run_FlowSOM_on_original markers}
 # Time ~ 1 min
 
@@ -340,7 +335,7 @@ ggplot(UMAP.plot) + coord_fixed(ratio=graphical.ratio.umap) +
 ```{r run_MEM_on_FlowSOM_on_t-SNE}
 # Time ~30 sec
 
-# Run MEM on the FlowSOM clusters found from using UMAP axes
+# Run MEM on the FlowSOM clusters found from using t-SNE axes
 cluster = as.numeric(as.vector((FlowSOM.clusters.tsne)))
 MEM.data = cbind(transformed.chosen.markers, cluster)
 
@@ -473,7 +468,7 @@ build.heatmaps(
 
 ```{r RMSD for All Clusters}
 # RMSD to compare labels from all populations (FlowSOM clusters vs. manually
-# gated cell populations)
+# gated populations)
 
 orig.MEM.scores = as.data.frame(MEM.values.orig[[5]])
 rownames(orig.MEM.scores) = paste0(rownames(orig.MEM.scores), " (Manual)")
