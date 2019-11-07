@@ -11,19 +11,7 @@ editor_options:
   chunk_output_type: inline
 ---
 
-This data set contains 7 FCS (flow cytometry standard) files. Each FCS file 
-contains single cell data for one cell subset that is a well-established, 
-phenotypically distinct population. This is mass cytometry data for healthy 
-human PBMC (peripheral blood mononuclear cells). The populations were expert 
-gated following a t-SNE analysis. The first section of the code will run two
-dimensionality reduction tools, UMAP and t-SNE, on the data set. Next, you 
-will run FlowSOM on the both the UMAP and t-SNE axes to cluster, or group 
-together, the various cell populations. Finally, you will run MEM to see 
-enrichment scores for each of the FlowSOM clusters or populations that have been 
-expert gated. The goal of this exercise is to run several computational tools on 
-a single cell data set to get a feel for the workflow used in the Irish lab as 
-well as compare the various analysis methods. The method for comparison of the 
-cell populations by automated or manual analysis is RMSD. 
+This data set contains 7 FCS (flow cytometry standard) files. Each FCS file contains single cell data for one cell subset that is a well-established, phenotypically distinct population. This is mass cytometry data for healthy human PBMC (peripheral blood mononuclear cells). The populations were expert gated following a t-SNE analysis. The first section of the code will run two dimensionality reduction tools, UMAP and t-SNE, on the data set. Next, you will run FlowSOM on the both the UMAP and t-SNE axes to cluster, or group together, the various cell populations. Finally, you will run MEM to see enrichment scores for each of the FlowSOM clusters or populations that have been expert gated. The goal of this exercise is to run several computational tools on a single cell data set to get a feel for the workflow used in the Irish lab as well as compare the various analysis methods. The method for comparison of the cell populations by automated or manual analysis is RMSD. 
 
 ```{r setup, include=FALSE}
 # Time <10 sec
