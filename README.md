@@ -7,7 +7,7 @@ To get started, make sure you have the latest R and RStudio installed. Then down
 
 ### Prerequisites
 
-Everything needed to install and run the example code is listed in the 00_install_tools.rmd file.  This will include the Bioconductor package and flowCore, which enable reading of Flow Cytometry Standard (FCS) files of single cell data.  Additional packages used in the example scripts include t-SNE, UMAP, and FlowSOM, in addition to MEM.
+Everything needed to install and run the example code is listed in the 00_install_tools.rmd file.  This will include the Bioconductor package and flowCore, which enable reading of Flow Cytometry Standard (FCS) files of single cell cytometry data.  Additional packages used in the example scripts include t-SNE, UMAP, and FlowSOM, in addition to MEM.
 
 ### Installing
 
@@ -22,13 +22,13 @@ t-SNE and UMAP are tools used for dimensionality reduction and are particularly 
 
 ### FlowSOM
 
-FlowSOM is a tool used to create self-organizing maps in order to cluster a given dataset. In our current workflow, we use FlowSOM to cluster on the 2D-space of the t-SNE or UMAP. We have found that clustering on dimensionally reduced space yields more robust and biologically meaningful clusters compared to clustering on the original dimensions of the data set. In the workflow example, FlowSOM will assign a cluster value to each cell (or dot) on the t-SNE or UMAP plot.
+FlowSOM is a tool used to create self-organizing maps in order to cluster a given dataset. In our current workflow, we use FlowSOM to cluster on the 2D-space of the t-SNE or UMAP. We have found that clustering on dimensionally reduced space yields more robust and biologically meaningful clusters compared to clustering on the original dimensions of the data set. In the workflow example, FlowSOM will assign a cluster value to each cell (or dot) on the t-SNE or UMAP plot. The example will also include FlowSOM clusters on the original marker space, or the high-dimensional space.
  
 ### MEM
 
-Marker Enrichment Modeling (MEM) is a tool designed to calculate enrichment scores.  MEM generates human and machine readable labels that quantify the features enriched in a sample.  The classic use of MEM is to identify multiple populations of cells and to compare each population to all of the other remaining cells from the original sample.  MEM enrichment scores range from +10 (meaning greatly enriched) through 0 (meaning not enriched) to -10 (meaning greatly lacking).  MEM scores are built form two fundamental statistics, the median and interquartile range, and the output of MEM can be represented as a heatmap of the scores where the rows are each population and the columns are measured features.  This information can also be represented in a compact label where the most enriched features are listed first. MEM will assign an enrichment score to each FlowSOM cluster in the workflow example provided. 
+Marker Enrichment Modeling (MEM) is a tool designed to calculate enrichment scores.  MEM generates human and machine readable labels that quantify the features enriched in a sample.  The classic use of MEM is to identify multiple populations of cells and to compare each population to all of the other remaining cells from the original sample.  MEM enrichment scores range from +10 (meaning greatly enriched) through 0 (meaning not enriched) to -10 (meaning greatly lacking).  MEM scores are built form two fundamental statistics, the median and interquartile range, and the output of MEM can be represented as a heatmap of the scores where the rows are each population and the columns are measured features.  This information can also be represented in a compact label where the most enriched features are listed first. MEM will assign an enrichment score to each FlowSOM cluster in the workflow example provided as well as to the manually gated populations of cells.
 
-
+RMSD (root mean square deviation) is used to compare MEM scores to one another. The final RMSD heatmap at the end of the code will show you the degree of similarity between clusters assigned by FlowSOM on either the original markers, UMAP, or t-SNE as well as populations assigned by an expert via biaxially gating. 
 
 ## Authors
 
