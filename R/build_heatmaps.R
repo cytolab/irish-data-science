@@ -132,12 +132,17 @@ build.heatmaps <-
         }
 
         # Print MEM heatmap according to cluster spec
-
+        if (length(which(apply(heatmap_data, 1, function(row) any(row < 0)))) == 0){
+          title_MEM = "   MEM Heatmap*"
+        }else{
+          title_MEM = "   MEM Heatmap"}
+        
+        
         if (labels == TRUE) {
             table <-
                 heatmap.2(
                     heatmap_data,
-                    main = "   MEM Heatmap",
+                    main = title_MEM,
                     dendrogram = dendro_var_MEM,
                     Rowv = Rowv_var_MEM,
                     Colv = Colv_var_MEM,
@@ -162,7 +167,7 @@ build.heatmaps <-
             table <-
                 heatmap.2(
                     heatmap_data,
-                    main = "MEM Heatmap",
+                    main = title_MEM,
                     dendrogram = dendro_var_MEM,
                     Rowv = Rowv_var_MEM,
                     Colv = Colv_var_MEM,
@@ -182,13 +187,19 @@ build.heatmaps <-
         }
 
         clustered_matrix = heatmap_data[rev(table$rowInd), table$colInd]
-        matrix.test = as.matrix(new_rownames_txt)
+        matrix.test= as.matrix(new_rownames)
+        matrix.test_txt = as.matrix(new_rownames_txt)
         
         if (length(which(apply(heatmap_data, 1, function(row) any(row < 0)))) >0){
-            enrichment_score_ordered = matrix.test[rev(table$rowInd), ] 
-            enrichment_score_ordered = str_remove(enrichment_score_ordered, "• DN None")
+            enrichment_score_ordered_txt = matrix.test_txt[rev(table$rowInd), ] 
         }else{
-            enrichment_score_ordered = matrix.test[rev(table$rowInd), ]}
+            enrichment_score_ordered_txt = matrix.test_txt[rev(table$rowInd), ]}
+        
+        if (length(which(apply(heatmap_data, 1, function(row) any(row < 0)))) >0){
+          enrichment_score_ordered = matrix.test[rev(table$rowInd), ] 
+        }else{
+          enrichment_score_ordered = matrix.test[rev(table$rowInd), ]}
+        
 
         # Print medians heatmap according to cluster spec
         reorder_medians = as.matrix(exp_data[[1]][[1]])[rev(table$rowInd), table$colInd]
@@ -302,10 +313,10 @@ build.heatmaps <-
                 strftime(Sys.time(), "%Y-%m-%d_%H%M%S"),
                 " MEM heatmap.pdf"
             ),
-            width = 20)
+            width = 10)
             heatmap.2(
                 heatmap_data,
-                main = "MEM heatmap",
+                main = title_MEM,
                 dendrogram = dendro_var_MEM,
                 Rowv = Rowv_var_MEM,
                 Colv = Colv_var_MEM,
@@ -319,8 +330,6 @@ build.heatmaps <-
                 cexCol = 0.8,
                 key = TRUE,
                 col = heat_palette_MEM,
-                labRow = new_rownames_txt,
-                margins = c(5, 70),
                 trace = "none"
                 ,
                 lhei = c(0.7, 1.5),
@@ -392,13 +401,13 @@ build.heatmaps <-
             }
         }
         if (((exp_data[[6]])[[1]]) == 0){
-            cat(enrichment_score_ordered, sep = "\n")
+            cat(enrichment_score_ordered_txt, sep = "\n")
         }else{
             filenames <- unlist(exp_data[[6]])
             matrix.filenames = as.matrix(filenames)
             filenames_ordered = matrix.filenames[rev(table$rowInd), ]
             new_rownames_filenames <-
-                cbind(filenames_ordered, enrichment_score_ordered)
+                cbind(filenames_ordered, enrichment_score_ordered_txt)
             colnames(new_rownames_filenames) <- c("File", "MEM label")
             print(new_rownames_filenames, sep = "\n")
         }
