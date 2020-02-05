@@ -7,7 +7,7 @@ output: html_document
 
 ```{r check_paths, echo=FALSE, results = "markup"}
 # Check to make sure FCS files, documentation, and MEM code are available
-cat("This section checks to see if files and paths are working correctly. You should see lists of files below.  If it outputs character(0), something is wrong.\n\n")
+cat("This section checks to see if files and paths are working correctly. You should see lists of files below.  If it outputs character(0), something is wrong.\n")
 
 # Check the MEM code path
 cat("\n\nThe /MEM folder contains the MEM source code for install and related files:\n")
@@ -15,31 +15,41 @@ list.files(getwd())
 
 # Check for datasets
 cat("\n\nCourse FCS format files are in subdirecties of the /datafiles folder:\n")
-list.files(paste(getwd(), "/datafiles", sep=""))
+list.files(paste(getwd(), "/datafiles/PBMC", sep=""))
+
+cat("\n\n...'check_paths' finished running")
 ```
 
 ```{r installation_notes, echo=FALSE, results = "markdown"}
 # Print the contents a help file that explains installing packages
 writeLines(readLines(paste(getwd(), "installing.txt", sep="/")))
+
+cat("\n\n...'installation_notes' finished running")
 ```
 
-```{r install_bioconductor_packages, echo=FALSE, results = "hide"}
+```{r install_flow_packages, echo=FALSE, results = "hide"}
 # install bioconductor and flow cytometry tools for R
 cat("If this works, you should see 4 sets of messages about downloading files that end in a message saying something like package 'BiocManager' successfully unpacked and MD5 sums checked.  You should see this for BioCManager, Biobase, flowCore, and FlowSOM.\n\n")
+
 install.packages("BiocManager", repos = "http://cran.us.r-project.org")
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("flowCore")
 BiocManager::install("FlowSOM")
+
+cat("\n\n...'install_flow_packages' finished running")
 ```
 
-```{r test_flow_installs, echo=FALSE, results = "markdown"}
+```{r load_flow_packages, echo=FALSE, results = "markdown"}
 # Load and test whether bioconductor and flow packages are installed
 cat("If this works, you may see Attaching Package messages or no message at all; that's good.  If you get a warning, go back to the last CHUNK.\n\n")
+
 library(FlowSOM)
 library(flowCore)
 library(Biobase)
+
+cat("\n\n...'load_flow_packages' finished running")
 ```
 
 ```{r install_ggplots, echo=FALSE, results = "markup"}
@@ -50,9 +60,12 @@ install.packages("ggplot2", repos = "http://cran.us.r-project.org")
 install.packages("hexbin", repos = "http://cran.us.r-project.org")
 install.packages("viridis", repos = "http://cran.us.r-project.org")
 install.packages("ggExtra", repos = "http://cran.us.r-project.org")
+install.packages("RColorBrewer", repos = "http://cran.us.r-project.org")
+
+cat("\n\n...'install_ggplots' finished running")
 ```
 
-```{r load_gplots, echo=FALSE, results = "markup"}
+```{r load_ggplots, echo=FALSE, results = "markup"}
 # Load and test whether gplots and ggplot2 packages are installed
 cat("If this works, you may see Attaching Package messages or no message at all; that's good.  If you get a warning, go back to the last CHUNK.\n\n")
 library(gplots)
@@ -60,20 +73,31 @@ library(ggplot2)
 library(hexbin)
 library(viridis)
 library(ggExtra)
+library(RColorBrewer)
+
+cat("\n\n...'load_ggplots' finished running")
 ```
 
 ```{r install_MEM, echo=FALSE, results = "markup"}
-# install MEM, load it, and test if it is all set
+# install MEM
 cat("If this works, you should see several lines about installing files, then DONE (MEM) near the end.  The MEM help page will also open in the Help menu in RStudio.\n\n")
 
 # If you have previously installed MEM, you may get an error message. If this is the case, try restarting your RStudio session
 install.packages(getwd(), type="source", repos=NULL)
+
+# OR to install without Rtools, uncomment lines below (remove # from the front of a line)
+# install.packages("devtools", repos = "http://cran.us.r-project.org")
+# devtools::install_github("cytolab/mem")
+
+cat("\n\n...'install_MEM' finished running")
+```
+
+```{r load_MEM, echo=FALSE, results = "markup"}
+# load MEM and open package documentation
 library(MEM)
 ?MEM
 
-# OR 
-# install.packages("devtools", repos = "http://cran.us.r-project.org")
-# devtools::install_github("cytolab/mem")
+cat("\n\n...'load_MEM' finished running")
 ```
 
 ```{r install_last_packages, echo=FALSE, results = "markup"}
@@ -82,7 +106,8 @@ print("You may see a bunch of messages, this is OK as long as they are not error
 install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 install.packages("Rtsne", repos = "http://cran.us.r-project.org")
 install.packages("uwot", repos = "http://cran.us.r-project.org")
-install.packages("RColorBrewer", repos = "http://cran.us.r-project.org")
+
+cat("\n\n...'install_last_packages' finished running")
 ```
 
 ```{r load_last_packages, echo=FALSE, results = "markup"}
@@ -90,5 +115,6 @@ install.packages("RColorBrewer", repos = "http://cran.us.r-project.org")
 library(tidyverse)
 library(Rtsne)
 library(uwot)
-library(RColorBrewer)
+
+cat("\n\n...'load_last_packages' finished running")
 ```

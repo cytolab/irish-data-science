@@ -24,20 +24,34 @@ library(flowCore)
 library(Biobase)
 library(ggplot2)
 library(hexbin)
+library(viridis)
+library(ggExtra)
+library(RColorBrewer)
 library(MEM)
 library(tidyverse)
 library(Rtsne)
 library(uwot)
-library(viridis)
-library(ggExtra)
-library(RColorBrewer)
+
+cat("\n\n...'setup' finished running")
 ```
 
 ```{r data_preparation, warning=FALSE}
 # Time <10 sec
 
-# read files into R by setting working directory and directing R to the fcs 
-# files
+###### CONSTANTS TO SET ########
+
+# cofactor for arcsinh transformation
+COFACTOR = 15 
+
+# set seed for reproducible results
+OVERALL_SEED = 43
+
+# set FlowSOM target number of clusters 
+CLUSTER_NUM = 10 
+
+################################
+
+# read files into R by setting working directory and directing R to the fcs files
 setwd(paste(getwd(), "/datafiles/PBMC", sep = ""))
 files <-  dir(pattern = "*.fcs")
 
@@ -46,20 +60,18 @@ data <- lapply(lapply(files, read.FCS), exprs)
 combined.data = as.data.frame(do.call(rbind, mapply(
   cbind, data, "cluster" = c(1:length(data)), SIMPLIFY = F)))
 
-# choose channels with markers to use for downstream analysis and apply arcsinh
-# transformation with a cofactor of 15
+# choose channels with markers to use for downstream analysis and apply arcsinh transformation with a cofactor of 15
 transformed.chosen.markers <- combined.data %>%
   select(contains("-"),-contains("Ir")) %>%
   mutate_all(function(x)
-    asinh(x / 15))        # cofactor here is 15; this can be changed
+    asinh(x / COFACTOR))  
 
-# set seed for reproducible results (43 is chosen below)
-overall_seed = 43
+cat("\n\n...'data_preparation' finished running")
 ```
 
 ```{r run_t-SNE}
 # Time ~5 min
-set.seed(overall_seed)
+set.seed(OVERALL_SEED)
 
 # the line below will run t-SNE on the scaled surface markers (to see help page 
 # for t-SNE, type "?Rtsne -- enter" in console) 
@@ -82,6 +94,9 @@ mytSNE = Rtsne(
   verbose = TRUE
 )
 tsne.data = as.data.frame(mytSNE$Y)
+
+cat("\n\n...'run_t-SNE' finished running")
+
 ```
 
 ```{r plot_t-SNE}
@@ -96,7 +111,7 @@ tsne.plot <- data.frame(x = tsne.data[, 1], y = tsne.data[, 2])
 
 # dot plot
 ggplot(tsne.plot) + coord_fixed(ratio = graphical.ratio.tsne) + 
-  geom_point(aes(x = x, y = y), cex = 0.5) + labs(x = "t-SNE 1", y = "t-SNE 2", 
+  geom_point(aes(x = x, y = y), cex = 0.3) + labs(x = "t-SNE 1", y = "t-SNE 2", 
   title = "PBMC Data on t-SNE Axes") + 
   theme_bw() + 
   labs(caption = "Data from Digggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
@@ -113,11 +128,14 @@ ggplot(tsne.plot, aes(x = x, y = y)) +
   labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank())
+
+cat("\n\n...'plot_t-SNE' finished running")
 ```
 
 ```{r run_UMAP}
+
 # Time ~1 min
-set.seed(overall_seed)
+set.seed(OVERALL_SEED)
 # Run UMAP on all scaled surface markers
 
 # the line below will run UMAP on the data set (to see help page for UMAP, type 
@@ -133,6 +151,9 @@ myumap <-
        n_threads = 1,               # this makes UMAP reproducible
        verbose = TRUE)
 umap.data = as.data.frame(myumap)
+
+cat("\n\n...'run_UMAP' finished running")
+
 ```
 
 ```{r plot_UMAP}
@@ -143,11 +164,11 @@ range <- apply(apply(umap.data, 2, range), 2, diff)
 graphical.ratio.umap <- (range[1] / range[2])
 
 # UMAP flat dot plot and density dot plot (1 dot = 1 cell)
-UMAP.plot <- data.frame(x = umap.data[, 1], y = umap.data[, 2])
+umap.plot <- data.frame(x = umap.data[, 1], y = umap.data[, 2])
 
 # dot plot
-ggplot(UMAP.plot) + coord_fixed(ratio = graphical.ratio.umap) + 
-  geom_point(aes(x = x, y = y), cex = 0.5) + labs(x = "UMAP 1", y = "UMAP 2", 
+ggplot(umap.plot) + coord_fixed(ratio = graphical.ratio.umap) + 
+  geom_point(aes(x = x, y = y), cex = 0.3) + labs(x = "UMAP 1", y = "UMAP 2", 
   title = "PBMC Data on UMAP Axes") + theme_bw() + 
   labs(caption = "Data from Digggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
@@ -163,6 +184,9 @@ ggplot(UMAP.plot, aes(x = x, y = y)) +
   labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank())
+
+cat("\n\n...'plot_UMAP' finished running")
+
 ```
 
 ```{r run_FlowSOM_on_t-SNE}
@@ -188,15 +212,17 @@ fsom <-
     
     colsToUse = c(1:2),  # columns to use 
     
-    nClus = 10,          # target number of clusters (this can be changed)
+    nClus = CLUSTER_NUM,          # target number of clusters (this can be changed)
     
-    seed = overall_seed  # set seed for reproducibility
+    seed = OVERALL_SEED  # set seed for reproducibility
   )
 FlowSOM.clusters.tsne <-
   as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
+
+cat("\n\n...'run_FlowSOM_on_t-SNE' finished running")
 ```
 
-```{r plot_tsne_flowSOM_clusters}
+```{r plot_t-SNE_flowSOM_clusters}
 # Time <10 sec
 qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
 col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, 
@@ -204,7 +230,7 @@ col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors,
 
 # plot FlowSOM clusters on t-SNE axes
 ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
-  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.tsne), cex = 0.5) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.tsne), cex = 0.3) + 
   labs(x = "t-SNE 1", y = "t-SNE 2",title = "FlowSOM Clustering on t-SNE Axes", 
       color = "Cluster") + theme_bw() + 
   guides(colour = guide_legend(override.aes = list(size=4))) +
@@ -212,10 +238,14 @@ ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) +
   labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank())
+
+cat("\n\n...'plot_t-SNE_FlowSOM_clusters' finished running")
 ```
 
-```{r run_FlowSOM_varying_cluster_number}
+```{r t-SNE_FlowSOM_varying_cluster_number}
 # Time ~ 1-2 min
+
+# run FlowSOM on the t-SNE axes while varying cluster number 
 for (i in seq(5,45,by = 10)){
 
   matrix <- as.matrix(tsne.data)
@@ -233,14 +263,15 @@ fsom <-
     flowframe, 
     colsToUse = c(1:2),
     nClus = i,    
-    seed = overall_seed 
+    seed = OVERALL_SEED 
   )
 FlowSOM.clusters.vary <-
   as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
 
+# plot FlowSOM clusters on t-SNE axes
 legend.col = round(max(as.numeric(as.vector(FlowSOM.clusters.vary)))/3)
 print(ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
-  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.vary), cex = 0.5) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.vary), cex = 0.3) + 
   labs(x = "t-SNE 1", y = "t-SNE 2",title = "FlowSOM Clustering on t-SNE Axes", 
        color = "Cluster") + theme_bw() + 
   guides(colour = guide_legend(override.aes = list(size=4), 
@@ -249,11 +280,14 @@ print(ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) +
   labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank()))}
+
+cat("\n\n...'t-SNE_FlowSOM_varying_cluster_number' finished running")
 ```
 
-```{r run_FlowSOM_on_original markers}
+```{r FlowSOM_on_original_markers}
 # Time ~ 1 min
 
+# create flowFrame for FlowSOM input (using orginal markers as input)
 matrix <- as.matrix(transformed.chosen.markers)
 metadata <-
   data.frame(name = dimnames(matrix)[[2]],
@@ -265,18 +299,20 @@ flowframe <- new("flowFrame",
                       exprs = matrix,
                       parameters = AnnotatedDataFrame(metadata))
 
+# implement the FlowSOM on the data by running the line below 
 fsom <-
   FlowSOM(
     flowframe,
     colsToUse = c(1:ncol(transformed.chosen.markers)),
-    nClus = 10,   
-    seed = overall_seed
+    nClus = CLUSTER_NUM,   
+    seed = OVERALL_SEED
   )
 FlowSOM.clusters.OG <-
   as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
 
+# plot FlowSOM clusters on t-SNE axes
 ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
-  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.OG), cex = 0.3) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.OG), cex = 0.2) + 
   labs(x = "t-SNE 1", y = "t-SNE 2",
        title = "FlowSOM Clustering on Original Markers", color = "Cluster") +
   theme_bw() + scale_color_manual(values = sample(col_vector)) +
@@ -284,12 +320,17 @@ ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) +
   labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank())
+
+cat("\n\n...'FlowSOM_on_original_markers' finished running")
 ```
 
-```{r run_FlowSOM_on_UMAP}
-# Time <10 sec
+```{r original_markers_FlowSOM_varying_cluster_number}
+# Time ~ 1-2 min
 
-matrix <- as.matrix(umap.data)
+# run FlowSOM on original markers while varying cluster number 
+for (i in seq(5,45,by = 10)){
+
+  matrix <- as.matrix(transformed.chosen.markers)
 metadata <-
   data.frame(name = dimnames(matrix)[[2]],
              desc = dimnames(matrix)[[2]])
@@ -301,16 +342,59 @@ flowframe <- new("flowFrame",
                       parameters = AnnotatedDataFrame(metadata))
 fsom <-
   FlowSOM(
+    flowframe, 
+    colsToUse = c(1:ncol(transformed.chosen.markers)),
+    nClus = i,    
+    seed = OVERALL_SEED 
+  )
+FlowSOM.clusters.vary <-
+  as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
+
+# plot FlowSOM clusters on t-SNE axes
+legend.col = round(max(as.numeric(as.vector(FlowSOM.clusters.vary)))/3)
+print(ggplot(tsne.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.vary), cex = 0.2) + 
+  labs(x = "t-SNE 1", y = "t-SNE 2",title = "FlowSOM Clustering on Original Markers", 
+       color = "Cluster") + theme_bw() + 
+  guides(colour = guide_legend(override.aes = list(size=4), 
+                               nrow = legend.col)) + 
+    scale_color_manual(values = sample(col_vector)) +
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank()))}
+
+cat("\n\n...'original_markers_FlowSOM_varying_cluster_number' finished running")
+```
+
+```{r FlowSOM_on_UMAP}
+# Time <10 sec
+
+# create flowFrame for FlowSOM input (using UMAP axes as input)
+matrix <- as.matrix(umap.data)
+metadata <-
+  data.frame(name = dimnames(matrix)[[2]],
+             desc = dimnames(matrix)[[2]])
+metadata$range <- apply(apply(matrix, 2, range), 2, diff)
+metadata$minRange <- apply(matrix, 2, min)
+metadata$maxRange <- apply(matrix, 2, max)
+flowframe <- new("flowFrame",
+                      exprs = matrix,
+                      parameters = AnnotatedDataFrame(metadata))
+
+# implement the FlowSOM on the data by running the line below 
+fsom <-
+  FlowSOM(
     flowframe,
     colsToUse = c(1:2),
-    nClus = 10,
-    seed = overall_seed
+    nClus = CLUSTER_NUM,
+    seed = OVERALL_SEED
   )
 FlowSOM.clusters.umap <-
   as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
 
-ggplot(UMAP.plot) + coord_fixed(ratio=graphical.ratio.umap) + 
-  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.umap), cex = 0.5) + 
+# plot FlowSOM clusters on UMAP axes
+ggplot(umap.plot) + coord_fixed(ratio=graphical.ratio.umap) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.umap), cex = 0.3) + 
   labs(x = "UMAP 1", y = "UMAP 2",title = "FlowSOM Clustering on UMAP Axes", 
        color = "Cluster") + theme_bw() + 
   guides(colour = guide_legend(override.aes = list(size=4)))+
@@ -318,6 +402,50 @@ ggplot(UMAP.plot) + coord_fixed(ratio=graphical.ratio.umap) +
   labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank())
+
+cat("\n\n...FlowSOM_on_UMAP' finished running")
+```
+
+```{r UMAP_FlowSOM_varying_cluster_number}
+# Time ~ 1-2 min
+
+# run FlowSOM on the UMAP axes while varying cluster number 
+for (i in seq(5,45,by = 10)){
+
+  matrix <- as.matrix(umap.data)
+metadata <-
+  data.frame(name = dimnames(matrix)[[2]],
+             desc = dimnames(matrix)[[2]])
+metadata$range <- apply(apply(matrix, 2, range), 2, diff)
+metadata$minRange <- apply(matrix, 2, min)
+metadata$maxRange <- apply(matrix, 2, max)
+flowframe <- new("flowFrame",
+                      exprs = matrix,
+                      parameters = AnnotatedDataFrame(metadata))
+fsom <-
+  FlowSOM(
+    flowframe, 
+    colsToUse = c(1:2),
+    nClus = i,    
+    seed = OVERALL_SEED 
+  )
+FlowSOM.clusters.vary <-
+  as.matrix(fsom[[2]][fsom[[1]]$map$mapping[, 1]])
+
+# plot FlowSOM clusters on UMAP axes
+legend.col = round(max(as.numeric(as.vector(FlowSOM.clusters.vary)))/3)
+print(ggplot(umap.plot) + coord_fixed(ratio=graphical.ratio.tsne) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters.vary), cex = 0.3) + 
+  labs(x = "UMAP 1", y = "UMAP 2",title = "FlowSOM Clustering on UMAP Axes", 
+       color = "Cluster") + theme_bw() + 
+  guides(colour = guide_legend(override.aes = list(size=4), 
+                               nrow = legend.col)) + 
+    scale_color_manual(values = sample(col_vector)) +
+  labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
+  theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank()))}
+
+cat("\n\n...'UMAP_FlowSOM_varying_cluster_number' finished running")
 ```
 
 ```{r run_MEM_on_FlowSOM_on_t-SNE}
@@ -359,9 +487,11 @@ build.heatmaps(
   labels = TRUE,                # include labels in heatmap
   only.MEMheatmap = FALSE
 )
+
+cat("\n\n...run_MEM_on_FlowSOM_on_t-SNE' finished running")
 ```
 
-```{r run_MEM_on_FlowSOM_on_OG}
+```{r run_MEM_on_FlowSOM_on_original}
 # Time ~30 sec
 
 cluster = as.numeric(as.vector((FlowSOM.clusters.OG)))
@@ -391,6 +521,7 @@ build.heatmaps(
   labels = TRUE,
   only.MEMheatmap = FALSE
 )
+cat("\n\n...run_MEM_on_FlowSOM_on_original' finished running")
 ```
 
 ```{r run_MEM_on_FlowSOM_on_UMAP}
@@ -423,6 +554,7 @@ build.heatmaps(
   labels = TRUE,
   only.MEMheatmap = FALSE
 )
+cat("\n\n...run_MEM_on_FlowSOM_on_UMAP' finished running")
 ```
 
 ```{r run_MEM_on_manually_gated_pops}
@@ -452,9 +584,11 @@ build.heatmaps(
   labels = TRUE,
   only.MEMheatmap = FALSE
 )
+
+cat("\n\n...run_MEM_on_manually_gated_pops' finished running")
 ```
 
-```{r RMSD for All Clusters}
+```{r run_RMSD_all_clusters}
 # RMSD to compare labels from all populations (FlowSOM clusters vs. manually
 # gated populations)
 
@@ -480,4 +614,6 @@ RMSD_vals <-
     newWindow.heatmaps = FALSE,
     output.matrix = TRUE
   )
+
+cat("\n\n...run_RMSD_on_clusters' finished running")
 ```
