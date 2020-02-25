@@ -59,6 +59,7 @@ data.lists <- lapply(lapply(my.files, read.FCS), exprs)
 # and all measure features 
 my.data = as.data.frame(do.call(rbind, mapply(cbind, data.lists, "File ID" = 
                                         c(1:length(data.lists)), SIMPLIFY = F)))
+orig_names = c(colnames(my.data),"UMAP1","UMAP2","cluster")
 colnames(my.data)[1:length(my.data) - 1] <- as.character(read.FCS
 (my.files[[1]])@parameters@data[["desc"]])
 ```
@@ -126,7 +127,7 @@ ggplot(UMAP.plot, aes(x=x, y=y)) + coord_fixed(ratio = graphical.ratio)  + geom_
 
 ```{r run_FlowSOM_on_UMAP}
 # enter target number of clusters
-target.clusters = 20
+target.clusters = 10
 
 # Run FlowSOM on your selected variable
 flowsom.input = umap.data
@@ -162,7 +163,7 @@ values = sample(col_vector)
 
 # plot FlowSOM clusters on UMAP axes
 ggplot(UMAP.plot) + coord_fixed(ratio=graphical.ratio) + 
-  geom_point(aes(x=x, y=y, color=FlowSOM.clusters),cex = 1.5) + 
+  geom_point(aes(x=x, y=y, color=FlowSOM.clusters),cex = 0.5) + 
   guides(colour = guide_legend(override.aes = list(size=5), nrow = 13)) +
   labs(x = "UMAP 1", y = "UMAP 2",title = "FlowSOM Clustering on UMAP Axes", 
        color = "FlowSOM Cluster") + theme_bw() + 
@@ -209,16 +210,21 @@ build.heatmaps(
 dir.create(file.path(getwd(), "/datafiles/my_data_files/output files"), showWarnings = FALSE)
 setwd(paste(getwd(), "/datafiles/my_data_files/output files", sep = ""))
 
-data.to.export = cbind(my.data,umap.data,cluster)
-separate.files = split(data.to.export,data.to.export$`File ID`)
+analysis.data = as.data.frame(cbind(my.data,umap.data,cluster))
+my.new.data  = analysis.data
+for (s in 1:ncol(my.new.data)){
+  colnames(my.new.data)[which(colnames(my.new.data) == colnames(umap.markers)[s])] <- paste0(colnames(analysis.data)[which(colnames(analysis.data) == colnames(umap.markers)[s])]," (u)")}
+new_desc = colnames(my.new.data)
+
+colnames(analysis.data)<-orig_names
+separate.files = split(analysis.data,analysis.data$`File ID`)
 for (i in 1:length(separate.files)){
   single.file = separate.files[[i]]
-  remove.ID  = single.file[-c(ncol(my.data))]
   mat <- as.matrix(single.file)
 # create flowFrame
 metadata <-
   data.frame(name = dimnames(mat)[[2]],
-             desc = dimnames(mat)[[2]])
+             desc = new_desc)
 metadata$range <- apply(apply(mat, 2, range), 2, diff)
 metadata$minRange <- apply(mat, 2, min)
 metadata$maxRange <- apply(mat, 2, max)
