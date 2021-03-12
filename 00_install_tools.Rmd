@@ -82,12 +82,8 @@ cat("\n\n...'load_ggplots' finished running")
 # install MEM
 cat("If this works, you should see several lines about installing files, then DONE (MEM) near the end.  The MEM help page will also open in the Help menu in RStudio.\n\n")
 
-# If you have previously installed MEM, you may get an error message. If this is the case, try restarting your RStudio session
-install.packages(getwd(), type="source", repos=NULL)
-
-# OR to install without Rtools, uncomment lines below (remove # from the front of a line)
-# install.packages("devtools", repos = "http://cran.us.r-project.org")
-# devtools::install_github("cytolab/mem")
+install.packages("devtools", repos = "http://cran.us.r-project.org")
+devtools::install_github("cytolab/mem")
 
 cat("\n\n...'install_MEM' finished running")
 ```
