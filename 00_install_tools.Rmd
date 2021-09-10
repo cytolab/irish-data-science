@@ -24,6 +24,8 @@ cat("\n\n...'check_paths' finished running")
 # Print the contents a help file that explains installing packages
 writeLines(readLines(paste(getwd(), "installing.txt", sep="/")))
 
+
+
 cat("\n\n...'installation_notes' finished running")
 ```
 
