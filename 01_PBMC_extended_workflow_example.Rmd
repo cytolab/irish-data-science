@@ -31,6 +31,7 @@ library(MEM)
 library(tidyverse)
 library(Rtsne)
 library(uwot)
+library(cowplot)
 
 cat("\n\n...'setup' finished running")
 ```
@@ -120,16 +121,38 @@ ggplot(tsne.plot) + coord_fixed(ratio = graphical.ratio.tsne) +
 
 # density dot plot
 ggplot(tsne.plot, aes(x = x, y = y)) + 
-  coord_fixed(ratio = graphical.ratio.tsne) + geom_bin2d(bins = 128) +
-  scale_fill_viridis_c(option = "A", trans = "sqrt") + 
-  scale_x_continuous(expand = c(0.1, 0)) +
-  scale_y_continuous(expand = c(0.1, 0)) + labs(x = "t-SNE 1", y = "t-SNE 2", 
+  coord_fixed(ratio = graphical.ratio.tsne)+ geom_point(size = 0.5) +geom_density_2d_filled(bins = 39) +scale_fill_manual(values = c("NA","NA","NA","NA","NA","NA","NA","NA","NA","NA","NA","NA","NA",viridis::viridis(28,option = "A"))) +
+labs(x = "t-SNE 1", y = "t-SNE 2", 
   title = "Density on t-SNE Axes") + theme_bw() + 
   labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank())
+              panel.grid.minor = element_blank())+theme(legend.position = "none") 
 
 cat("\n\n...'plot_t-SNE' finished running")
+```
+```{r plot heat on markers t-SNE}
+setwd(paste(getwd(), sep = ""))
+dir.create("./output files/")
+
+tsne.by.marker<-as_tibble(tsne.data) %>%
+  bind_cols(transformed.chosen.markers)  %>%
+  gather(channel, intensity, -V1, -V2) %>%
+  mutate(across(channel,factor))%>%
+  group_split(channel) %>%
+  map(
+    ~ggplot(.,aes(x= V1, y= V2, col = intensity)) +
+  geom_point(size = 3) +
+  scale_color_gradientn(
+    colours = colorRampPalette(rev(brewer.pal(n = 11, name = "Spectral")))(5))+
+  facet_grid(~ channel, labeller = function(x) label_value(x, multi_line = FALSE)) +
+  coord_fixed() +
+  theme_bw()+
+  theme(strip.text.x = element_text(size = 20),legend.title=element_blank()))%>%
+  plot_grid(plotlist = ., align = 'hv', ncol = 8)
+
+png(paste("./output files/",strftime(Sys.time(),"%Y-%m-%d_%H%M%S"),"t-SNE on transformed data.png"),height = 2000,width = 4000)
+print(tsne.by.marker)
+dev.off()
 ```
 
 ```{r run_UMAP}
@@ -176,17 +199,41 @@ ggplot(umap.plot) + coord_fixed(ratio = graphical.ratio.umap) +
 
 # density dot plot
 ggplot(umap.plot, aes(x = x, y = y)) + 
-  coord_fixed(ratio = graphical.ratio.umap) + geom_bin2d(bins = 128) +
-  scale_fill_viridis_c(option = "A", trans = "sqrt") + 
-  scale_x_continuous(expand = c(0.1, 0)) +
-  scale_y_continuous(expand = c(0.1, 0)) + labs(x = "UMAP 1", y = "UMAP 2", 
-  title = "Density on UMAP Axes") + theme_bw() + 
+  coord_fixed(ratio = graphical.ratio.tsne)+ geom_point(size = 0.5) +geom_density_2d_filled(bins = 39) +scale_fill_manual(values = c("NA","NA","NA","NA","NA","NA","NA","NA","NA","NA","NA","NA","NA",viridis::viridis(28,option = "A"))) +
+labs(x = "UMAP 1", y = "UMAP 2", 
+  title = "Density on t-SNE Axes") + theme_bw() + 
   labs(caption = "Data from Diggins et al., Nat Methods 2017, 14: 275-278 \nFlow Repository: FR-FCM-ZY63") + 
   theme(panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank())
+              panel.grid.minor = element_blank())+theme(legend.position = "none") 
+
 
 cat("\n\n...'plot_UMAP' finished running")
 
+```
+
+```{r plot heat on markers UMAP}
+setwd(paste(getwd(), sep = ""))
+dir.create("./output files/")
+
+umap.by.marker<-as_tibble(umap.data) %>%
+  bind_cols(transformed.chosen.markers)  %>%
+  gather(channel, intensity, -V1, -V2) %>%
+  mutate(across(channel,factor))%>%
+  group_split(channel) %>%
+  map(
+    ~ggplot(.,aes(x= V1, y= V2, col = intensity)) +
+  geom_point(size = 3) +
+  scale_color_gradientn(
+    colours = colorRampPalette(rev(brewer.pal(n = 11, name = "Spectral")))(5))+
+  facet_grid(~ channel, labeller = function(x) label_value(x, multi_line = FALSE)) +
+  coord_fixed() +
+  theme_bw()+
+  theme(strip.text.x = element_text(size = 20),legend.title=element_blank()))%>%
+  plot_grid(plotlist = ., align = 'hv', ncol = 8)
+
+png(paste("./output files/",strftime(Sys.time(),"%Y-%m-%d_%H%M%S"),"UMAP on transformed data.png"),height = 2000,width = 4000)
+print(umap.by.marker)
+dev.off()
 ```
 
 ```{r run_FlowSOM_on_t-SNE}
