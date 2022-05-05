@@ -27,7 +27,7 @@ library(hexbin)
 library(viridis)
 library(ggExtra)
 library(RColorBrewer)
-library(MEM)
+library(cytoMEM)
 library(tidyverse)
 library(Rtsne)
 library(uwot)
@@ -521,13 +521,12 @@ MEM.values.tf = MEM(
 )
 
 # build MEM heatmap and output enrichment scores
-build.heatmaps(
+build_heatmaps(
   MEM.values.tf,                # input MEM values
   
   cluster.MEM = "both",         # dendrogram for columns and rows
   
   display.thresh = 2,           # display threshold for MEM scores
-  newWindow.heatmaps = FALSE,
   output.files = TRUE,          # makes txt and PDF files for heatmap and MEM 
                                 # scores
   
@@ -559,11 +558,10 @@ MEM.values.ogf = MEM(
   IQR.thresh = NULL
 )
 
-build.heatmaps(
+build_heatmaps(
   MEM.values.ogf,
   cluster.MEM = "both",
   display.thresh = 2,
-  newWindow.heatmaps = FALSE,
   output.files = TRUE,
   labels = TRUE,
   only.MEMheatmap = FALSE
@@ -592,11 +590,10 @@ MEM.values.uf = MEM(
   IQR.thresh = NULL
 )
 
-build.heatmaps(
+build_heatmaps(
   MEM.values.uf,
   cluster.MEM = "both", 
   display.thresh = 2,
-  newWindow.heatmaps = FALSE,
   output.files = TRUE,
   labels = TRUE,
   only.MEMheatmap = FALSE
@@ -622,11 +619,10 @@ MEM.values.orig = MEM(
   IQR.thresh = NULL
 )
 
-build.heatmaps(
+build_heatmaps(
   MEM.values.orig,      
   cluster.MEM = "both",
   display.thresh = 2,   
-  newWindow.heatmaps = FALSE,
   output.files = TRUE,
   labels = TRUE,
   only.MEMheatmap = FALSE

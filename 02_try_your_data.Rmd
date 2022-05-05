@@ -18,7 +18,7 @@ library(FlowSOM)
 library(flowCore)
 library(Biobase)
 library(ggplot2)
-library(MEM)
+library(cytoMEM)
 library(tidyverse)
 library(Rtsne)
 library(uwot)
@@ -194,12 +194,11 @@ MEM.values.uf = MEM(
 )
 
 # build MEM heatmap and output enrichment scores
-build.heatmaps(
+build_heatmaps(
   MEM.values.uf,
   cluster.MEM = "both",
   cluster.medians = "none",
   display.thresh = 1,
-  newWindow.heatmaps = TRUE,
   output.files = TRUE,
   labels = FALSE,
   only.MEMheatmap = TRUE

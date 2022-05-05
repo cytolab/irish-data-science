@@ -86,19 +86,20 @@ library(ggpubr)
 cat("\n\n...'load_plot_packages' finished running")
 ```
 
-```{r install_MEM, echo=FALSE, results = "markup"}
-# install MEM
+```{r install_cytoMEM, echo=FALSE, results = "markup"}
+# install cytoMEM
 cat("If this works, you should see several lines about installing files, then DONE (MEM) near the end.  The MEM help page will also open in the Help menu in RStudio.\n\n")
 
-install.packages("devtools", repos = "http://cran.us.r-project.org")
-devtools::install_github("cytolab/mem")
+ if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+ BiocManager::install("cytoMEM")
 
-cat("\n\n...'install_MEM' finished running")
+cat("\n\n...'install_cytoMEM' finished running")
 ```
 
-```{r load_MEM, echo=FALSE, results = "markup"}
+```{r load_cytoMEM, echo=FALSE, results = "markup"}
 # load MEM and open package documentation
-library(MEM)
+library(cytoMEM)
 ?MEM
 
 cat("\n\n...'load_MEM' finished running")
